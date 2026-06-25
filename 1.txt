@@ -1,0 +1,53 @@
+# ======================================
+# PRACTICAL 1: All Commands in Sequence
+# ======================================
+
+# 1. Install Java
+sudo apt update
+sudo apt install openjdk-11-jdk -y
+
+# 2. Download Hadoop
+wget https://downloads.apache.org/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
+sudo tar -xzvf hadoop-3.3.6.tar.gz -C /usr/local/
+sudo mv /usr/local/hadoop-3.3.6 /usr/local/hadoop
+
+# 3. Environment Variables
+echo 'export HADOOP_HOME=/usr/local/hadoop' >> ~/.bashrc
+echo 'export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin' >> ~/.bashrc
+echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> ~/.bashrc
+source ~/.bashrc
+
+# 4. SSH Setup
+ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+chmod 0600 ~/.ssh/authorized_keys
+ssh localhost
+
+# 5. Configure Hadoop (Edit files manually using nano)
+nano /usr/local/hadoop/etc/hadoop/core-site.xml
+nano /usr/local/hadoop/etc/hadoop/hdfs-site.xml
+
+# 6. Format NameNode
+hdfs namenode -format
+
+# 7. Start HDFS
+start-dfs.sh
+
+# 8. Verify Services
+jps
+
+# 9. Web UI (Open in browser)
+# http://localhost:9870
+
+# 10. HDFS Commands
+hdfs dfs -mkdir -p /user/pooja/input
+echo "Hello Hadoop" > test.txt
+hdfs dfs -put test.txt /user/pooja/input/
+hdfs dfs -ls /user/pooja/input/
+hdfs dfs -cat /user/pooja/input/test.txt
+hdfs dfs -get /user/pooja/input/test.txt download.txt
+hdfs dfs -rm /user/pooja/input/test.txt
+hdfs dfs -rm -r /user/pooja/input
+
+# 11. Stop HDFS
+stop-dfs.sh
