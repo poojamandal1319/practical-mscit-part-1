@@ -1,53 +1,187 @@
-# ======================================
-# PRACTICAL 1: All Commands in Sequence
-# ======================================
+# ============================================================
+# PRACTICAL 1: HADOOP INSTALLATION AND HDFS COMMANDS
+# MSCIT Part 1 - Big Data
+# ============================================================
 
-# 1. Install Java
+# ============================================================
+# STEP 1: INSTALL JAVA
+# ============================================================
 sudo apt update
 sudo apt install openjdk-11-jdk -y
+java -version
 
-# 2. Download Hadoop
+# ============================================================
+# STEP 2: DOWNLOAD AND EXTRACT HADOOP
+# ============================================================
 wget https://downloads.apache.org/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
 sudo tar -xzvf hadoop-3.3.6.tar.gz -C /usr/local/
 sudo mv /usr/local/hadoop-3.3.6 /usr/local/hadoop
 
-# 3. Environment Variables
+# ============================================================
+# STEP 3: SET ENVIRONMENT VARIABLES
+# ============================================================
 echo 'export HADOOP_HOME=/usr/local/hadoop' >> ~/.bashrc
 echo 'export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin' >> ~/.bashrc
 echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> ~/.bashrc
 source ~/.bashrc
+hadoop version
 
-# 4. SSH Setup
+# ============================================================
+# STEP 4: SSH SETUP
+# ============================================================
 ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
 cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 chmod 0600 ~/.ssh/authorized_keys
 ssh localhost
+# Type 'exit' to come out
 
-# 5. Configure Hadoop (Edit files manually using nano)
-nano /usr/local/hadoop/etc/hadoop/core-site.xml
-nano /usr/local/hadoop/etc/hadoop/hdfs-site.xml
+# ============================================================
+# STEP 5: HADOOP XML CONFIGURATION FILES
+# ============================================================
 
-# 6. Format NameNode
+# ---------- 5.1 core-site.xml ----------
+cat > /usr/local/hadoop/etc/hadoop/core-site.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
+EOF
+
+# ---------- 5.2 hdfs-site.xml ----------
+cat > /usr/local/hadoop/etc/hadoop/hdfs-site.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>/usr/local/hadoop/data/namenode</value>
+    </property>
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>/usr/local/hadoop/data/datanode</value>
+    </property>
+</configuration>
+EOF
+
+# ---------- 5.3 mapred-site.xml ----------
+cat > /usr/local/hadoop/etc/hadoop/mapred-site.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+</configuration>
+EOF
+
+# ---------- 5.4 yarn-site.xml ----------
+cat > /usr/local/hadoop/etc/hadoop/yarn-site.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+        <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+    </property>
+</configuration>
+EOF
+
+# ---------- 5.5 hadoop-env.sh ----------
+echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> /usr/local/hadoop/etc/hadoop/hadoop-env.sh
+
+# ============================================================
+# STEP 6: FORMAT NAMENODE
+# ============================================================
 hdfs namenode -format
+# Type 'Y' when prompted
 
-# 7. Start HDFS
+# ============================================================
+# STEP 7: START HDFS AND YARN SERVICES
+# ============================================================
 start-dfs.sh
+start-yarn.sh
 
-# 8. Verify Services
+# ============================================================
+# STEP 8: VERIFY SERVICES
+# ============================================================
 jps
 
-# 9. Web UI (Open in browser)
-# http://localhost:9870
+# ============================================================
+# STEP 9: WEB UI ACCESS
+# ============================================================
+# NameNode UI: http://localhost:9870
+# ResourceManager: http://localhost:8088
+# JobHistory: http://localhost:19888
 
-# 10. HDFS Commands
+# Check via command line
+wget -qO- http://localhost:9870 | head -20
+
+# ============================================================
+# STEP 10: HDFS COMMANDS
+# ============================================================
+
+# 10.1 Create directory in HDFS
 hdfs dfs -mkdir -p /user/pooja/input
-echo "Hello Hadoop" > test.txt
+
+# 10.2 Create local file
+echo "Hello Hadoop, this is my first file" > test.txt
+echo "Big Data is awesome" >> test.txt
+cat test.txt
+
+# 10.3 Upload file to HDFS
 hdfs dfs -put test.txt /user/pooja/input/
+
+# 10.4 List files in HDFS
 hdfs dfs -ls /user/pooja/input/
+
+# 10.5 Display file content
 hdfs dfs -cat /user/pooja/input/test.txt
+
+# 10.6 View first 10 lines (head)
+hdfs dfs -head /user/pooja/input/test.txt
+
+# 10.7 View last 10 lines (tail)
+hdfs dfs -tail /user/pooja/input/test.txt
+
+# 10.8 Download file from HDFS
 hdfs dfs -get /user/pooja/input/test.txt download.txt
-hdfs dfs -rm /user/pooja/input/test.txt
+cat download.txt
+
+# 10.9 Check file size in HDFS
+hdfs dfs -du -h /user/pooja/input/
+
+# 10.10 Copy file within HDFS
+hdfs dfs -cp /user/pooja/input/test.txt /user/pooja/input/test_copy.txt
+hdfs dfs -ls /user/pooja/input/
+
+# 10.11 Move/Rename file
+hdfs dfs -mv /user/pooja/input/test_copy.txt /user/pooja/input/renamed.txt
+hdfs dfs -ls /user/pooja/input/
+
+# 10.12 Delete file
+hdfs dfs -rm /user/pooja/input/renamed.txt
+
+# 10.13 Delete directory
 hdfs dfs -rm -r /user/pooja/input
 
-# 11. Stop HDFS
+# 10.14 Check HDFS report
+hdfs dfsadmin -report
+
+# ============================================================
+# STEP 11: STOP SERVICES
+# ============================================================
+stop-yarn.sh
 stop-dfs.sh
